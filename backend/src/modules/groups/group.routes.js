@@ -11,7 +11,7 @@ const groupController = require('./group.controller');
 
 // Middlewares
 const { validate, validateQuery } = require('../../middlewares/validation.middleware');
-const { groupSchemas } = require('../../middlewares/validation.middleware');
+const { groupSchemas, walletSchemas } = require('../../middlewares/validation.middleware');
 const {
     authenticate,
     requireKYC,
@@ -513,7 +513,7 @@ router.post(
     requireKYC,
     requireGroupMember,
     checkDailyLimit('withdrawal'),
-    validate(walletSchemas.verifyPin), // Reutilizar schema de PIN
+    validate(walletSchemas.verifyPin),
     catchAsync(groupController.payCycle)
 );
 
