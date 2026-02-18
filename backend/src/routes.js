@@ -42,7 +42,11 @@ router.get('/health', (req, res) => {
 });
 
 // Rotas de autenticação (com rate limit específico)
-router.use(`${API_BASE}/auth`, dynamicRateLimit, authRoutes);
+if (authRoutes) {
+    router.use(`${API_BASE}/auth`, dynamicRateLimit, authRoutes);
+} else {
+    logger.error('❌ authRoutes não foi carregado corretamente');
+}
 
 // =====================================================
 // MIDDLEWARE DE AUTENTICAÇÃO GLOBAL
@@ -55,23 +59,38 @@ router.use(authenticate);
 // =====================================================
 
 // Usuários
-router.use(`${API_BASE}/users`, dynamicRateLimit, userRoutes);
+if (userRoutes) {
+    router.use(`${API_BASE}/users`, dynamicRateLimit, userRoutes);
+}
 
 // KYC
-router.use(`${API_BASE}/kyc`, dynamicRateLimit, kycRoutes);
+if (kycRoutes) {
+    router.use(`${API_BASE}/kyc`, dynamicRateLimit, kycRoutes);
+}
 
 // Wallet e transações
-router.use(`${API_BASE}/wallet`, dynamicRateLimit, walletRoutes);
-router.use(`${API_BASE}/transactions`, dynamicRateLimit, transactionRoutes);
+if (walletRoutes) {
+    router.use(`${API_BASE}/wallet`, dynamicRateLimit, walletRoutes);
+}
+
+if (transactionRoutes) {
+    router.use(`${API_BASE}/transactions`, dynamicRateLimit, transactionRoutes);
+}
 
 // Grupos
-router.use(`${API_BASE}/groups`, dynamicRateLimit, groupRoutes);
+if (groupRoutes) {
+    router.use(`${API_BASE}/groups`, dynamicRateLimit, groupRoutes);
+}
 
 // Chat
-router.use(`${API_BASE}/chat`, dynamicRateLimit, chatRoutes);
+if (chatRoutes) {
+    router.use(`${API_BASE}/chat`, dynamicRateLimit, chatRoutes);
+}
 
 // Pagamentos (mocks)
-router.use(`${API_BASE}/payments`, dynamicRateLimit, paymentRoutes);
+if (paymentRoutes) {
+    router.use(`${API_BASE}/payments`, dynamicRateLimit, paymentRoutes);
+}
 
 // =====================================================
 // ROTA DE DEBUG (APENAS DESENVOLVIMENTO)
@@ -79,7 +98,7 @@ router.use(`${API_BASE}/payments`, dynamicRateLimit, paymentRoutes);
 if (process.env.NODE_ENV === 'development') {
     router.get('/api/debug/routes', (req, res) => {
         const routes = [];
-
+        
         const extractRoutes = (stack, basePath = '') => {
             stack.forEach((layer) => {
                 if (layer.route) {
@@ -101,68 +120,13 @@ if (process.env.NODE_ENV === 'development') {
         };
 
         extractRoutes(router.stack);
-
+        
         res.json({
             total: routes.length,
             routes: routes.sort((a, b) => a.path.localeCompare(b.path))
         });
     });
 }
-
-// =====================================================
-// DOCUMENTAÇÃO DAS ROTAS
-// =====================================================
-
-/**
- * @swagger
- * tags:
- *   - name: Auth
- *     description: Autenticação e registro
- *   - name: Users
- *     description: Gerenciamento de usuários
- *   - name: KYC
- *     description: Verificação de identidade
- *   - name: Wallet
- *     description: Carteira digital e saldos
- *   - name: Transactions
- *     description: Histórico de transações
- *   - name: Groups
- *     description: Grupos de Kixikila
- *   - name: Chat
- *     description: Chat em tempo real
- *   - name: Payments
- *     description: Pagamentos simulados
- */
-
-/**
- * @swagger
- * components:
- *   securitySchemes:
- *     bearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
- *   responses:
- *     UnauthorizedError:
- *       description: Token ausente ou inválido
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               success:
- *                 type: boolean
- *                 example: false
- *               error:
- *                 type: object
- *                 properties:
- *                   code:
- *                     type: string
- *                     example: UNAUTHORIZED
- *                   message:
- *                     type: string
- *                     example: Não autorizado
- */
 
 // =====================================================
 // LOG DE ROTAS REGISTRADAS
