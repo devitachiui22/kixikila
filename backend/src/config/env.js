@@ -65,11 +65,13 @@ const config = {
     },
 
     // Redis (para filas e cache)
+    // Seção Redis (opcional)
     redis: {
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT, 10) || 6379,
         password: process.env.REDIS_PASSWORD || '',
-        db: parseInt(process.env.REDIS_DB, 10) || 0
+        db: parseInt(process.env.REDIS_DB, 10) || 0,
+        enabled: process.env.USE_REDIS === 'true'
     },
 
     // JWT
