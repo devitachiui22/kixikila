@@ -1,6 +1,6 @@
 // =====================================================
 // KIXIKILAHUB - REGISTRO GLOBAL DE ROTAS
-// Agrupamento e organização de todas as rotas da API
+// Versão com debug para identificar módulo não carregado
 // =====================================================
 
 const express = require('express');
@@ -11,15 +11,68 @@ const { authenticate } = require('./middlewares/auth.middleware');
 const { dynamicRateLimit } = require('./middlewares/rateLimit.middleware');
 const logger = require('./utils/logger');
 
-// Importação dos módulos de rotas
-const authRoutes = require('./modules/auth/auth.routes');
-const userRoutes = require('./modules/users/user.routes');
-const kycRoutes = require('./modules/kyc/kyc.routes');
-const walletRoutes = require('./modules/wallet/wallet.routes');
-const transactionRoutes = require('./modules/transactions/transaction.routes');
-const groupRoutes = require('./modules/groups/group.routes');
-const chatRoutes = require('./modules/chat/chat.routes');
-const paymentRoutes = require('./modules/payments/payment.routes');
+// =====================================================
+// IMPORTAÇÃO COM VERIFICAÇÃO DETALHADA
+// =====================================================
+console.log('🚀 Iniciando carregamento dos módulos de rotas...');
+
+let authRoutes, userRoutes, kycRoutes, walletRoutes, transactionRoutes, groupRoutes, chatRoutes, paymentRoutes;
+
+try {
+    authRoutes = require('./modules/auth/auth.routes');
+    console.log('✅ authRoutes carregado:', !!authRoutes);
+} catch (error) {
+    console.error('❌ Erro ao carregar authRoutes:', error.message);
+}
+
+try {
+    userRoutes = require('./modules/users/user.routes');
+    console.log('✅ userRoutes carregado:', !!userRoutes);
+} catch (error) {
+    console.error('❌ Erro ao carregar userRoutes:', error.message);
+}
+
+try {
+    kycRoutes = require('./modules/kyc/kyc.routes');
+    console.log('✅ kycRoutes carregado:', !!kycRoutes);
+} catch (error) {
+    console.error('❌ Erro ao carregar kycRoutes:', error.message);
+}
+
+try {
+    walletRoutes = require('./modules/wallet/wallet.routes');
+    console.log('✅ walletRoutes carregado:', !!walletRoutes);
+} catch (error) {
+    console.error('❌ Erro ao carregar walletRoutes:', error.message);
+}
+
+try {
+    transactionRoutes = require('./modules/transactions/transaction.routes');
+    console.log('✅ transactionRoutes carregado:', !!transactionRoutes);
+} catch (error) {
+    console.error('❌ Erro ao carregar transactionRoutes:', error.message);
+}
+
+try {
+    groupRoutes = require('./modules/groups/group.routes');
+    console.log('✅ groupRoutes carregado:', !!groupRoutes);
+} catch (error) {
+    console.error('❌ Erro ao carregar groupRoutes:', error.message);
+}
+
+try {
+    chatRoutes = require('./modules/chat/chat.routes');
+    console.log('✅ chatRoutes carregado:', !!chatRoutes);
+} catch (error) {
+    console.error('❌ Erro ao carregar chatRoutes:', error.message);
+}
+
+try {
+    paymentRoutes = require('./modules/payments/payment.routes');
+    console.log('✅ paymentRoutes carregado:', !!paymentRoutes);
+} catch (error) {
+    console.error('❌ Erro ao carregar paymentRoutes:', error.message);
+}
 
 // =====================================================
 // VERSÃO DA API
@@ -31,7 +84,7 @@ const API_BASE = `/api/${API_VERSION}`;
 // ROTAS PÚBLICAS (SEM AUTENTICAÇÃO)
 // =====================================================
 
-// Health check (sem rate limit)
+// Health check
 router.get('/health', (req, res) => {
     res.status(200).json({
         success: true,
@@ -41,55 +94,56 @@ router.get('/health', (req, res) => {
     });
 });
 
-// Rotas de autenticação (com rate limit específico)
-if (authRoutes) {
+// Rotas de autenticação
+if (authRoutes && typeof authRoutes === 'function') {
     router.use(`${API_BASE}/auth`, dynamicRateLimit, authRoutes);
+    console.log('✅ Rota /auth registrada');
 } else {
-    logger.error('❌ authRoutes não foi carregado corretamente');
+    console.error('❌ authRoutes não é uma função válida:', typeof authRoutes);
 }
 
 // =====================================================
 // MIDDLEWARE DE AUTENTICAÇÃO GLOBAL
-// Todas as rotas abaixo requerem autenticação
 // =====================================================
 router.use(authenticate);
 
 // =====================================================
-// ROTAS PROTEGIDAS (COM AUTENTICAÇÃO)
+// ROTAS PROTEGIDAS (COM VERIFICAÇÃO)
 // =====================================================
 
-// Usuários
-if (userRoutes) {
+if (userRoutes && typeof userRoutes === 'function') {
     router.use(`${API_BASE}/users`, dynamicRateLimit, userRoutes);
+    console.log('✅ Rota /users registrada');
 }
 
-// KYC
-if (kycRoutes) {
+if (kycRoutes && typeof kycRoutes === 'function') {
     router.use(`${API_BASE}/kyc`, dynamicRateLimit, kycRoutes);
+    console.log('✅ Rota /kyc registrada');
 }
 
-// Wallet e transações
-if (walletRoutes) {
+if (walletRoutes && typeof walletRoutes === 'function') {
     router.use(`${API_BASE}/wallet`, dynamicRateLimit, walletRoutes);
+    console.log('✅ Rota /wallet registrada');
 }
 
-if (transactionRoutes) {
+if (transactionRoutes && typeof transactionRoutes === 'function') {
     router.use(`${API_BASE}/transactions`, dynamicRateLimit, transactionRoutes);
+    console.log('✅ Rota /transactions registrada');
 }
 
-// Grupos
-if (groupRoutes) {
+if (groupRoutes && typeof groupRoutes === 'function') {
     router.use(`${API_BASE}/groups`, dynamicRateLimit, groupRoutes);
+    console.log('✅ Rota /groups registrada');
 }
 
-// Chat
-if (chatRoutes) {
+if (chatRoutes && typeof chatRoutes === 'function') {
     router.use(`${API_BASE}/chat`, dynamicRateLimit, chatRoutes);
+    console.log('✅ Rota /chat registrada');
 }
 
-// Pagamentos (mocks)
-if (paymentRoutes) {
+if (paymentRoutes && typeof paymentRoutes === 'function') {
     router.use(`${API_BASE}/payments`, dynamicRateLimit, paymentRoutes);
+    console.log('✅ Rota /payments registrada');
 }
 
 // =====================================================
@@ -98,51 +152,32 @@ if (paymentRoutes) {
 if (process.env.NODE_ENV === 'development') {
     router.get('/api/debug/routes', (req, res) => {
         const routes = [];
-        
         const extractRoutes = (stack, basePath = '') => {
             stack.forEach((layer) => {
                 if (layer.route) {
                     const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
-                    routes.push({
-                        path: basePath + layer.route.path,
-                        methods
-                    });
+                    routes.push({ path: basePath + layer.route.path, methods });
                 } else if (layer.name === 'router' && layer.handle.stack) {
-                    const routerPath = layer.regexp.source
-                        .replace('\\/?(?=\\/|$)', '')
-                        .replace(/\\\//g, '/')
-                        .replace(/\^/g, '')
-                        .replace(/\?/g, '')
-                        .replace(/\(\?:\(\[\^\\\/\]\+\?\)\)/g, ':param');
-                    extractRoutes(layer.handle.stack, routerPath);
+                    extractRoutes(layer.handle.stack, basePath);
                 }
             });
         };
-
         extractRoutes(router.stack);
-        
-        res.json({
-            total: routes.length,
-            routes: routes.sort((a, b) => a.path.localeCompare(b.path))
-        });
+        res.json({ total: routes.length, routes });
     });
 }
 
 // =====================================================
 // LOG DE ROTAS REGISTRADAS
 // =====================================================
-logger.info('✅ Rotas registradas:', {
-    auth: `${API_BASE}/auth`,
-    users: `${API_BASE}/users`,
-    kyc: `${API_BASE}/kyc`,
-    wallet: `${API_BASE}/wallet`,
-    transactions: `${API_BASE}/transactions`,
-    groups: `${API_BASE}/groups`,
-    chat: `${API_BASE}/chat`,
-    payments: `${API_BASE}/payments`
-});
+console.log('📋 Resumo das rotas registradas:');
+console.log(`- /auth: ${authRoutes ? '✅' : '❌'}`);
+console.log(`- /users: ${userRoutes ? '✅' : '❌'}`);
+console.log(`- /kyc: ${kycRoutes ? '✅' : '❌'}`);
+console.log(`- /wallet: ${walletRoutes ? '✅' : '❌'}`);
+console.log(`- /transactions: ${transactionRoutes ? '✅' : '❌'}`);
+console.log(`- /groups: ${groupRoutes ? '✅' : '❌'}`);
+console.log(`- /chat: ${chatRoutes ? '✅' : '❌'}`);
+console.log(`- /payments: ${paymentRoutes ? '✅' : '❌'}`);
 
-// =====================================================
-// EXPORTS
-// =====================================================
 module.exports = router;
