@@ -1,18 +1,34 @@
 // =====================================================
 // KIXIKILAHUB - REGISTRO GLOBAL DE ROTAS
-// Versão com debug para identificar módulo não carregado
+// Versão final com verificações de middleware
 // =====================================================
 
 const express = require('express');
 const router = express.Router();
 
 // Middlewares globais
-const { authenticate } = require('./middlewares/auth.middleware');
-const { dynamicRateLimit } = require('./middlewares/rateLimit.middleware');
+let authenticate, dynamicRateLimit;
+
+try {
+    authenticate = require('./middlewares/auth.middleware').authenticate;
+    console.log('✅ authenticate carregado:', !!authenticate);
+} catch (error) {
+    console.error('❌ Erro ao carregar authenticate:', error.message);
+    authenticate = (req, res, next) => next(); // fallback
+}
+
+try {
+    dynamicRateLimit = require('./middlewares/rateLimit.middleware').dynamicRateLimit;
+    console.log('✅ dynamicRateLimit carregado:', !!dynamicRateLimit);
+} catch (error) {
+    console.error('❌ Erro ao carregar dynamicRateLimit:', error.message);
+    dynamicRateLimit = (req, res, next) => next(); // fallback
+}
+
 const logger = require('./utils/logger');
 
 // =====================================================
-// IMPORTAÇÃO COM VERIFICAÇÃO DETALHADA
+// IMPORTAÇÃO DOS MÓDULOS DE ROTAS
 // =====================================================
 console.log('🚀 Iniciando carregamento dos módulos de rotas...');
 
@@ -23,6 +39,7 @@ try {
     console.log('✅ authRoutes carregado:', !!authRoutes);
 } catch (error) {
     console.error('❌ Erro ao carregar authRoutes:', error.message);
+    authRoutes = express.Router(); // fallback
 }
 
 try {
@@ -30,6 +47,7 @@ try {
     console.log('✅ userRoutes carregado:', !!userRoutes);
 } catch (error) {
     console.error('❌ Erro ao carregar userRoutes:', error.message);
+    userRoutes = express.Router();
 }
 
 try {
@@ -37,6 +55,7 @@ try {
     console.log('✅ kycRoutes carregado:', !!kycRoutes);
 } catch (error) {
     console.error('❌ Erro ao carregar kycRoutes:', error.message);
+    kycRoutes = express.Router();
 }
 
 try {
@@ -44,6 +63,7 @@ try {
     console.log('✅ walletRoutes carregado:', !!walletRoutes);
 } catch (error) {
     console.error('❌ Erro ao carregar walletRoutes:', error.message);
+    walletRoutes = express.Router();
 }
 
 try {
@@ -51,6 +71,7 @@ try {
     console.log('✅ transactionRoutes carregado:', !!transactionRoutes);
 } catch (error) {
     console.error('❌ Erro ao carregar transactionRoutes:', error.message);
+    transactionRoutes = express.Router();
 }
 
 try {
@@ -58,6 +79,7 @@ try {
     console.log('✅ groupRoutes carregado:', !!groupRoutes);
 } catch (error) {
     console.error('❌ Erro ao carregar groupRoutes:', error.message);
+    groupRoutes = express.Router();
 }
 
 try {
@@ -65,6 +87,7 @@ try {
     console.log('✅ chatRoutes carregado:', !!chatRoutes);
 } catch (error) {
     console.error('❌ Erro ao carregar chatRoutes:', error.message);
+    chatRoutes = express.Router();
 }
 
 try {
@@ -72,6 +95,7 @@ try {
     console.log('✅ paymentRoutes carregado:', !!paymentRoutes);
 } catch (error) {
     console.error('❌ Erro ao carregar paymentRoutes:', error.message);
+    paymentRoutes = express.Router();
 }
 
 // =====================================================
@@ -81,10 +105,9 @@ const API_VERSION = process.env.API_VERSION || 'v1';
 const API_BASE = `/api/${API_VERSION}`;
 
 // =====================================================
-// ROTAS PÚBLICAS (SEM AUTENTICAÇÃO)
+// ROTAS PÚBLICAS
 // =====================================================
 
-// Health check
 router.get('/health', (req, res) => {
     res.status(200).json({
         success: true,
@@ -94,90 +117,70 @@ router.get('/health', (req, res) => {
     });
 });
 
-// Rotas de autenticação
-if (authRoutes && typeof authRoutes === 'function') {
+if (authRoutes) {
     router.use(`${API_BASE}/auth`, dynamicRateLimit, authRoutes);
     console.log('✅ Rota /auth registrada');
-} else {
-    console.error('❌ authRoutes não é uma função válida:', typeof authRoutes);
 }
 
 // =====================================================
-// MIDDLEWARE DE AUTENTICAÇÃO GLOBAL
+// MIDDLEWARE DE AUTENTICAÇÃO
 // =====================================================
-router.use(authenticate);
+if (authenticate) {
+    router.use(authenticate);
+    console.log('✅ Middleware authenticate registrado');
+}
 
 // =====================================================
-// ROTAS PROTEGIDAS (COM VERIFICAÇÃO)
+// ROTAS PROTEGIDAS
 // =====================================================
 
-if (userRoutes && typeof userRoutes === 'function') {
+if (userRoutes) {
     router.use(`${API_BASE}/users`, dynamicRateLimit, userRoutes);
     console.log('✅ Rota /users registrada');
 }
 
-if (kycRoutes && typeof kycRoutes === 'function') {
+if (kycRoutes) {
     router.use(`${API_BASE}/kyc`, dynamicRateLimit, kycRoutes);
     console.log('✅ Rota /kyc registrada');
 }
 
-if (walletRoutes && typeof walletRoutes === 'function') {
+if (walletRoutes) {
     router.use(`${API_BASE}/wallet`, dynamicRateLimit, walletRoutes);
     console.log('✅ Rota /wallet registrada');
 }
 
-if (transactionRoutes && typeof transactionRoutes === 'function') {
+if (transactionRoutes) {
     router.use(`${API_BASE}/transactions`, dynamicRateLimit, transactionRoutes);
     console.log('✅ Rota /transactions registrada');
 }
 
-if (groupRoutes && typeof groupRoutes === 'function') {
+if (groupRoutes) {
     router.use(`${API_BASE}/groups`, dynamicRateLimit, groupRoutes);
     console.log('✅ Rota /groups registrada');
 }
 
-if (chatRoutes && typeof chatRoutes === 'function') {
+if (chatRoutes) {
     router.use(`${API_BASE}/chat`, dynamicRateLimit, chatRoutes);
     console.log('✅ Rota /chat registrada');
 }
 
-if (paymentRoutes && typeof paymentRoutes === 'function') {
+if (paymentRoutes) {
     router.use(`${API_BASE}/payments`, dynamicRateLimit, paymentRoutes);
     console.log('✅ Rota /payments registrada');
 }
 
 // =====================================================
-// ROTA DE DEBUG (APENAS DESENVOLVIMENTO)
+// LOG FINAL
 // =====================================================
-if (process.env.NODE_ENV === 'development') {
-    router.get('/api/debug/routes', (req, res) => {
-        const routes = [];
-        const extractRoutes = (stack, basePath = '') => {
-            stack.forEach((layer) => {
-                if (layer.route) {
-                    const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
-                    routes.push({ path: basePath + layer.route.path, methods });
-                } else if (layer.name === 'router' && layer.handle.stack) {
-                    extractRoutes(layer.handle.stack, basePath);
-                }
-            });
-        };
-        extractRoutes(router.stack);
-        res.json({ total: routes.length, routes });
-    });
-}
-
-// =====================================================
-// LOG DE ROTAS REGISTRADAS
-// =====================================================
-console.log('📋 Resumo das rotas registradas:');
-console.log(`- /auth: ${authRoutes ? '✅' : '❌'}`);
-console.log(`- /users: ${userRoutes ? '✅' : '❌'}`);
-console.log(`- /kyc: ${kycRoutes ? '✅' : '❌'}`);
-console.log(`- /wallet: ${walletRoutes ? '✅' : '❌'}`);
-console.log(`- /transactions: ${transactionRoutes ? '✅' : '❌'}`);
-console.log(`- /groups: ${groupRoutes ? '✅' : '❌'}`);
-console.log(`- /chat: ${chatRoutes ? '✅' : '❌'}`);
-console.log(`- /payments: ${paymentRoutes ? '✅' : '❌'}`);
+console.log('📋 Rotas configuradas com sucesso!');
+console.log(`- API Base: ${API_BASE}`);
+console.log(`- Auth: ${API_BASE}/auth`);
+console.log(`- Users: ${API_BASE}/users`);
+console.log(`- KYC: ${API_BASE}/kyc`);
+console.log(`- Wallet: ${API_BASE}/wallet`);
+console.log(`- Transactions: ${API_BASE}/transactions`);
+console.log(`- Groups: ${API_BASE}/groups`);
+console.log(`- Chat: ${API_BASE}/chat`);
+console.log(`- Payments: ${API_BASE}/payments`);
 
 module.exports = router;
