@@ -1,38 +1,53 @@
-// File: src/modules/transactions/transaction.service.js
+// =====================================================
+// KIXIKILAHUB - CONEXÃO COM POSTGRESQL (NEON)
+// Pool de conexões com tratamento de erros e retry
+// =====================================================
 
-const db = require('../../config/database');
+const { Pool } = require('pg');
+const config = require('./env');
+const logger = require('../utils/logger');
 
-// Obter histórico de transações com filtros opcionais
-const getTransactions = async (userId, filters = {}) => {
-    const { type, startDate, endDate } = filters;
-    let query = `SELECT id, type, amount, fee, status, reference, description, created_at
-                 FROM transactions
-                 WHERE user_id = $1`;
-    const params = [userId];
-    let paramIndex = 2;
+const pool = new Pool({
+    connectionString: config.database.url,
+    ssl: config.database.ssl ? { rejectUnauthorized: false } : false,
+    max: config.database.pool.max,
+    min: config.database.pool.min,
+    idleTimeoutMillis: config.database.pool.idleTimeoutMillis,
+    connectionTimeoutMillis: config.database.pool.connectionTimeoutMillis,
+});
 
-    if (type) {
-        query += ` AND type = $${paramIndex}`;
-        params.push(type);
-        paramIndex++;
+const query = async (text, params) => {
+    const start = Date.now();
+    try {
+        const result = await pool.query(text, params);
+        const duration = Date.now() - start;
+        if (duration > 1000) {
+            logger.warn(`⚠️ Query lenta (${duration}ms): ${text.substring(0, 200)}...`);
+        }
+        return result;
+    } catch (error) {
+        logger.error('❌ Erro na query:', { query: text, error: error.message });
+        throw error;
     }
-    if (startDate) {
-        query += ` AND created_at >= $${paramIndex}`;
-        params.push(startDate);
-        paramIndex++;
-    }
-    if (endDate) {
-        query += ` AND created_at <= $${paramIndex}`;
-        params.push(endDate);
-        paramIndex++;
-    }
+};
 
-    query += ` ORDER BY created_at DESC`;
-
-    const res = await db.query(query, params);
-    return res.rows;
+const transaction = async (callback) => {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const result = await callback(client);
+        await client.query('COMMIT');
+        return result;
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
 };
 
 module.exports = {
-    getTransactions
+    pool,
+    query,
+    transaction
 };
