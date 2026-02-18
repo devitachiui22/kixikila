@@ -1,6 +1,6 @@
 // =====================================================
 // KIXIKILAHUB - MIDDLEWARES DE RATE LIMITING
-// Versão sem Redis para produção
+// Versão com exports corrigidos
 // =====================================================
 
 const rateLimit = require('express-rate-limit');
@@ -11,9 +11,6 @@ const logger = require('../utils/logger');
 // FUNÇÃO AUXILIAR PARA CRIAR LIMITADORES
 // =====================================================
 
-/**
- * Cria um rate limiter com configurações personalizadas
- */
 const createLimiter = (options = {}) => {
     const defaultOptions = {
         windowMs: 15 * 60 * 1000,
@@ -113,6 +110,47 @@ const searchLimiter = createLimiter({
     max: 20
 });
 
+// Middleware dinâmico baseado na rota
+const dynamicRateLimit = (req, res, next) => {
+    const path = req.path;
+    let limiter = apiLimiter;
+
+    if (path.includes('/auth/')) {
+        if (path.includes('/login') || path.includes('/register')) {
+            limiter = authLimiter;
+        } else {
+            limiter = authLimiter;
+        }
+    } else if (path.includes('/kyc/')) {
+        limiter = kycLimiter;
+    } else if (path.includes('/groups/')) {
+        if (path.includes('/create') || req.method === 'POST') {
+            limiter = createGroupLimiter;
+        } else if (path.includes('/search')) {
+            limiter = searchLimiter;
+        } else {
+            limiter = apiLimiter;
+        }
+    } else if (path.includes('/chat/')) {
+        if (path.includes('/message') || req.method === 'POST') {
+            limiter = chatMessageLimiter;
+        } else {
+            limiter = apiLimiter;
+        }
+    } else if (path.includes('/wallet/')) {
+        if (path.includes('/deposit') || path.includes('/withdraw')) {
+            limiter = financialLimiter;
+        } else {
+            limiter = apiLimiter;
+        }
+    }
+
+    return limiter(req, res, next);
+};
+
+// =====================================================
+// EXPORTS - TODOS OS LIMITADORES
+// =====================================================
 module.exports = {
     apiLimiter,
     authLimiter,
@@ -123,5 +161,6 @@ module.exports = {
     emailVerificationLimiter,
     pinChangeLimiter,
     searchLimiter,
-    createLimiter
+    createLimiter,
+    dynamicRateLimit // Esta linha estava faltando!
 };
