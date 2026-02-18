@@ -4,7 +4,7 @@
 // =====================================================
 
 const rateLimit = require('express-rate-limit');
-const config = require('./env');
+const config = require('../config/env');
 const logger = require('../utils/logger');
 
 // =====================================================
@@ -64,13 +64,13 @@ const createLimiter = (options = {}) => {
 // =====================================================
 
 const apiLimiter = createLimiter({
-    windowMs: config.security.rateLimit.windowMs,
-    max: config.security.rateLimit.max
+    windowMs: config.security?.rateLimit?.windowMs || 15 * 60 * 1000,
+    max: config.security?.rateLimit?.max || 100
 });
 
 const authLimiter = createLimiter({
     windowMs: 15 * 60 * 1000,
-    max: config.security.rateLimit.maxAuth,
+    max: config.security?.rateLimit?.maxAuth || 5,
     skipSuccessfulRequests: true,
     keyGenerator: (req) => {
         const email = req.body.email || '';
