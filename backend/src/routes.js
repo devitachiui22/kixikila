@@ -1,6 +1,6 @@
 // =====================================================
 // KIXIKILAHUB - REGISTRO GLOBAL DE ROTAS
-// Versão final com separação de rotas públicas/protegidas
+// CORREÇÃO: Garantir que rotas públicas venham antes do middleware
 // =====================================================
 
 const express = require('express');
@@ -14,7 +14,7 @@ try {
     console.log('✅ authenticate carregado:', !!authenticate);
 } catch (error) {
     console.error('❌ Erro ao carregar authenticate:', error.message);
-    authenticate = (req, res, next) => next(); // fallback
+    authenticate = (req, res, next) => next();
 }
 
 try {
@@ -22,7 +22,7 @@ try {
     console.log('✅ dynamicRateLimit carregado:', !!dynamicRateLimit);
 } catch (error) {
     console.error('❌ Erro ao carregar dynamicRateLimit:', error.message);
-    dynamicRateLimit = (req, res, next) => next(); // fallback
+    dynamicRateLimit = (req, res, next) => next();
 }
 
 const logger = require('./utils/logger');
@@ -105,7 +105,7 @@ const API_VERSION = process.env.API_VERSION || 'v1';
 const API_BASE = `/api/${API_VERSION}`;
 
 // =====================================================
-// ROTAS PÚBLICAS (SEM AUTENTICAÇÃO)
+// 1. PRIMEIRO: ROTAS PÚBLICAS (SEM AUTENTICAÇÃO)
 // =====================================================
 
 // Health check
@@ -118,58 +118,60 @@ router.get('/health', (req, res) => {
     });
 });
 
-// Rotas de autenticação (públicas)
+// Rotas de autenticação (públicas) - ANTES do middleware
 if (authRoutes) {
     router.use(`${API_BASE}/auth`, dynamicRateLimit, authRoutes);
-    console.log('✅ Rota /auth registrada (pública)');
+    console.log('✅ Rota /auth registrada (PÚBLICA)');
 }
 
 // =====================================================
-// MIDDLEWARE DE AUTENTICAÇÃO
+// 2. DEPOIS: MIDDLEWARE DE AUTENTICAÇÃO
 // =====================================================
-// Todas as rotas ABAIXO deste ponto requerem autenticação
+// Todas as rotas APÓS este ponto exigem autenticação
 if (authenticate) {
     router.use(authenticate);
-    console.log('✅ Middleware authenticate registrado - rotas abaixo são protegidas');
+    console.log('✅ Middleware authenticate registrado - rotas abaixo são PROTEGIDAS');
+} else {
+    console.error('❌ Middleware authenticate não disponível!');
 }
 
 // =====================================================
-// ROTAS PROTEGIDAS (REQUEREM AUTENTICAÇÃO)
+// 3. ROTAS PROTEGIDAS (REQUEREM AUTENTICAÇÃO)
 // =====================================================
 
 if (userRoutes) {
     router.use(`${API_BASE}/users`, dynamicRateLimit, userRoutes);
-    console.log('✅ Rota /users registrada (protegida)');
+    console.log('✅ Rota /users registrada (PROTEGIDA)');
 }
 
 if (kycRoutes) {
     router.use(`${API_BASE}/kyc`, dynamicRateLimit, kycRoutes);
-    console.log('✅ Rota /kyc registrada (protegida)');
+    console.log('✅ Rota /kyc registrada (PROTEGIDA)');
 }
 
 if (walletRoutes) {
     router.use(`${API_BASE}/wallet`, dynamicRateLimit, walletRoutes);
-    console.log('✅ Rota /wallet registrada (protegida)');
+    console.log('✅ Rota /wallet registrada (PROTEGIDA)');
 }
 
 if (transactionRoutes) {
     router.use(`${API_BASE}/transactions`, dynamicRateLimit, transactionRoutes);
-    console.log('✅ Rota /transactions registrada (protegida)');
+    console.log('✅ Rota /transactions registrada (PROTEGIDA)');
 }
 
 if (groupRoutes) {
     router.use(`${API_BASE}/groups`, dynamicRateLimit, groupRoutes);
-    console.log('✅ Rota /groups registrada (protegida)');
+    console.log('✅ Rota /groups registrada (PROTEGIDA)');
 }
 
 if (chatRoutes) {
     router.use(`${API_BASE}/chat`, dynamicRateLimit, chatRoutes);
-    console.log('✅ Rota /chat registrada (protegida)');
+    console.log('✅ Rota /chat registrada (PROTEGIDA)');
 }
 
 if (paymentRoutes) {
     router.use(`${API_BASE}/payments`, dynamicRateLimit, paymentRoutes);
-    console.log('✅ Rota /payments registrada (protegida)');
+    console.log('✅ Rota /payments registrada (PROTEGIDA)');
 }
 
 // =====================================================
@@ -177,13 +179,13 @@ if (paymentRoutes) {
 // =====================================================
 console.log('📋 Rotas configuradas com sucesso!');
 console.log(`- API Base: ${API_BASE}`);
-console.log(`- Auth (pública): ${API_BASE}/auth`);
-console.log(`- Users (protegida): ${API_BASE}/users`);
-console.log(`- KYC (protegida): ${API_BASE}/kyc`);
-console.log(`- Wallet (protegida): ${API_BASE}/wallet`);
-console.log(`- Transactions (protegida): ${API_BASE}/transactions`);
-console.log(`- Groups (protegida): ${API_BASE}/groups`);
-console.log(`- Chat (protegida): ${API_BASE}/chat`);
-console.log(`- Payments (protegida): ${API_BASE}/payments`);
+console.log(`- Auth (PÚBLICA): ${API_BASE}/auth`);
+console.log(`- Users (PROTEGIDA): ${API_BASE}/users`);
+console.log(`- KYC (PROTEGIDA): ${API_BASE}/kyc`);
+console.log(`- Wallet (PROTEGIDA): ${API_BASE}/wallet`);
+console.log(`- Transactions (PROTEGIDA): ${API_BASE}/transactions`);
+console.log(`- Groups (PROTEGIDA): ${API_BASE}/groups`);
+console.log(`- Chat (PROTEGIDA): ${API_BASE}/chat`);
+console.log(`- Payments (PROTEGIDA): ${API_BASE}/payments`);
 
 module.exports = router;
