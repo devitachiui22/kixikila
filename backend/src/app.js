@@ -22,18 +22,35 @@ const routes = require('./routes');
 const app = express();
 
 // =====================================================
-// CONFIGURAÇÃO CORS - CORRIGIDA
+// CONFIGURAÇÃO CORS - ACEITAR QUALQUER ORIGEM LOCAL
 // =====================================================
 const corsOptions = {
-    origin: [
-        'http://localhost:59011',  // Porta atual do seu frontend
-        'http://localhost:8080',
-        'http://localhost:3000',
-        'http://127.0.0.1:59011',
-        'http://127.0.0.1:8080',
-        'https://kixikila.onrender.com',
-        'https://kixikila-mobile.web.app'
-    ],
+    origin: function (origin, callback) {
+        // Permitir requisições sem origin (como apps mobile)
+        if (!origin) return callback(null, true);
+        
+        // Lista de origens permitidas
+        const allowedOrigins = [
+            /^http:\/\/localhost:\d+$/,        // Qualquer porta local
+            /^http:\/\/127\.0\.0\.1:\d+$/,    // Qualquer porta local IP
+            'https://kixikila.onrender.com',
+            'https://kixikila-mobile.web.app'
+        ];
+        
+        // Verificar se a origem corresponde a algum padrão
+        const allowed = allowedOrigins.some(pattern => {
+            if (pattern instanceof RegExp) {
+                return pattern.test(origin);
+            }
+            return pattern === origin;
+        });
+        
+        if (allowed) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     optionsSuccessStatus: 200,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -42,19 +59,17 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Para desenvolvimento, permitir qualquer origem (APENAS TESTE!)
-if (config.server.isDevelopment) {
-    app.use(cors({
-        origin: '*',
-        credentials: true
-    }));
-}
+// Para desenvolvimento, logar as origens
+app.use((req, res, next) => {
+    console.log('🌐 Origem da requisição:', req.headers.origin);
+    next();
+});
 
 // =====================================================
 // OUTROS MIDDLEWARES
 // =====================================================
 app.use(helmet({
-    contentSecurityPolicy: false, // Desabilitado para teste
+    contentSecurityPolicy: false,
 }));
 
 app.use(compression());
