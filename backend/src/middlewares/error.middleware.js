@@ -224,7 +224,8 @@ const logError = (err, req) => {
     if (err.statusCode >= 500) {
         logger.error('❌ Erro interno do servidor:', logData);
     } else if (err.statusCode >= 400) {
-        logger.warn('⚠️ Erro do cliente:', logData);
+        // CORREÇÃO: Usar logger.log em vez de logger.warn
+        logger.log('warn', '⚠️ Erro do cliente:', logData);
     } else {
         logger.info('ℹ️ Erro tratado:', logData);
     }
@@ -282,4 +283,5 @@ module.exports = {
     errorHandler,
     notFound,
     catchAsync
+
 };
