@@ -17,6 +17,7 @@ const logger = require('./utils/logger');
 const { errorHandler, notFound } = require('./middlewares/error.middleware');
 const { requestLogger } = require('./utils/logger');
 
+// Importar rotas
 const routes = require('./routes');
 
 const app = express();
@@ -26,18 +27,15 @@ const app = express();
 // =====================================================
 const corsOptions = {
     origin: function (origin, callback) {
-        // Permitir requisições sem origin (como apps mobile)
         if (!origin) return callback(null, true);
         
-        // Lista de origens permitidas
         const allowedOrigins = [
-            /^http:\/\/localhost:\d+$/,        // Qualquer porta local
-            /^http:\/\/127\.0\.0\.1:\d+$/,    // Qualquer porta local IP
+            /^http:\/\/localhost:\d+$/,
+            /^http:\/\/127\.0\.0\.1:\d+$/,
             'https://kixikila.onrender.com',
             'https://kixikila-mobile.web.app'
         ];
         
-        // Verificar se a origem corresponde a algum padrão
         const allowed = allowedOrigins.some(pattern => {
             if (pattern instanceof RegExp) {
                 return pattern.test(origin);
@@ -59,14 +57,8 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Para desenvolvimento, logar as origens
-app.use((req, res, next) => {
-    console.log('🌐 Origem da requisição:', req.headers.origin);
-    next();
-});
-
 // =====================================================
-// OUTROS MIDDLEWARES
+// OUTROS MIDDLEWARES (ORDEM IMPORTANTE!)
 // =====================================================
 app.use(helmet({
     contentSecurityPolicy: false,
@@ -80,7 +72,7 @@ app.use(mongoSanitize());
 app.use(xss());
 app.use(hpp());
 
-// Rate limiting
+// Rate limiting (aplicado a todas as rotas)
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -89,7 +81,6 @@ const limiter = rateLimit({
         error: 'Muitas requisições deste IP, tente novamente mais tarde.'
     }
 });
-
 app.use('/api/', limiter);
 
 // Logs de requisição
@@ -104,10 +95,12 @@ if (config.server.isProduction) {
     app.set('trust proxy', 1);
 }
 
-// Rotas da API
-app.use('/api', routes);
+// =====================================================
+// ROTAS DA API - A ORDEM É CRUCIAL!
+// Primeiro as rotas públicas, depois as protegidas
+// =====================================================
 
-// Rota de health check
+// Health check (pública)
 app.get('/health', (req, res) => {
     res.status(200).json({
         success: true,
@@ -118,7 +111,13 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Tratamento de erros
+// Montar todas as rotas definidas no routes.js
+// O routes.js já tem a separação correta de públicas/protegidas
+app.use('/api', routes);
+
+// =====================================================
+// TRATAMENTO DE ERROS (sempre no final)
+// =====================================================
 app.use(notFound);
 app.use(errorHandler);
 
