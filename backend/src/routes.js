@@ -1,6 +1,6 @@
 // =====================================================
 // KIXIKILAHUB - REGISTRO GLOBAL DE ROTAS
-// VERSÃO FINAL - 100% FUNCIONAL
+// VERSÃO 100% FUNCIONAL - ROTAS PÚBLICAS CORRETAMENTE SEPARADAS
 // =====================================================
 
 const express = require('express');
@@ -18,7 +18,7 @@ const API_VERSION = process.env.API_VERSION || 'v1';
 const API_BASE = `/api/${API_VERSION}`;
 
 // =====================================================
-// 1. ROTAS PÚBLICAS (SEM AUTENTICAÇÃO)
+// 1. ROTAS PÚBLICAS (NÃO EXIGEM TOKEN)
 // =====================================================
 
 // Health check
@@ -37,13 +37,12 @@ router.use(`${API_BASE}/auth`, dynamicRateLimit, authRoutes);
 console.log('✅ Rotas de autenticação registradas (PÚBLICAS)');
 
 // =====================================================
-// 2. MIDDLEWARE DE AUTENTICAÇÃO (APARTIR DAQUI TUDO É PROTEGIDO)
+// 2. MIDDLEWARE DE AUTENTICAÇÃO (APENAS PARA ROTAS PROTEGIDAS)
 // =====================================================
-router.use(authenticate);
-console.log('✅ Middleware de autenticação ativado - rotas abaixo são protegidas');
+router.use(`${API_BASE}`, authenticate); // Só protege rotas abaixo
 
 // =====================================================
-// 3. ROTAS PROTEGIDAS (REQUEREM TOKEN)
+// 3. ROTAS PROTEGIDAS (EXIGEM TOKEN VÁLIDO)
 // =====================================================
 
 // Usuários
