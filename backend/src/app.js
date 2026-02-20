@@ -1,5 +1,6 @@
 // =====================================================
 // KIXIKILAHUB - CONFIGURAÇÃO PRINCIPAL DO EXPRESS
+// VERSÃO FINAL COM CORS CORRETO
 // =====================================================
 
 const express = require('express');
@@ -17,48 +18,29 @@ const logger = require('./utils/logger');
 const { errorHandler, notFound } = require('./middlewares/error.middleware');
 const { requestLogger } = require('./utils/logger');
 
-// Importar rotas
 const routes = require('./routes');
 
 const app = express();
 
 // =====================================================
-// CONFIGURAÇÃO CORS - ACEITAR QUALQUER ORIGEM LOCAL
+// CONFIGURAÇÃO CORS - ACEITAR QUALQUER ORIGEM (PARA TESTES)
 // =====================================================
-const corsOptions = {
-    origin: function (origin, callback) {
-        if (!origin) return callback(null, true);
-        
-        const allowedOrigins = [
-            /^http:\/\/localhost:\d+$/,
-            /^http:\/\/127\.0\.0\.1:\d+$/,
-            'https://kixikila.onrender.com',
-            'https://kixikila-mobile.web.app'
-        ];
-        
-        const allowed = allowedOrigins.some(pattern => {
-            if (pattern instanceof RegExp) {
-                return pattern.test(origin);
-            }
-            return pattern === origin;
-        });
-        
-        if (allowed) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+app.use(cors({
+    origin: true, // Aceita qualquer origem
     credentials: true,
-    optionsSuccessStatus: 200,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-};
+    optionsSuccessStatus: 200
+}));
 
-app.use(cors(corsOptions));
+// Log de origens para debug
+app.use((req, res, next) => {
+    console.log('🌐 Origem:', req.headers.origin);
+    console.log('🔐 Método:', req.method);
+    console.log('📦 Path:', req.path);
+    next();
+});
 
 // =====================================================
-// OUTROS MIDDLEWARES (ORDEM IMPORTANTE!)
+// OUTROS MIDDLEWARES
 // =====================================================
 app.use(helmet({
     contentSecurityPolicy: false,
@@ -72,7 +54,7 @@ app.use(mongoSanitize());
 app.use(xss());
 app.use(hpp());
 
-// Rate limiting (aplicado a todas as rotas)
+// Rate limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -95,12 +77,10 @@ if (config.server.isProduction) {
     app.set('trust proxy', 1);
 }
 
-// =====================================================
-// ROTAS DA API - A ORDEM É CRUCIAL!
-// Primeiro as rotas públicas, depois as protegidas
-// =====================================================
+// Rotas da API
+app.use('/api', routes);
 
-// Health check (pública)
+// Rota de health check
 app.get('/health', (req, res) => {
     res.status(200).json({
         success: true,
@@ -111,17 +91,8 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Montar todas as rotas definidas no routes.js
-// O routes.js já tem a separação correta de públicas/protegidas
-app.use('/api', routes);
-
-// =====================================================
-// TRATAMENTO DE ERROS (sempre no final)
-// =====================================================
+// Tratamento de erros
 app.use(notFound);
 app.use(errorHandler);
 
-// =====================================================
-// EXPORTS
-// =====================================================
 module.exports = app;
