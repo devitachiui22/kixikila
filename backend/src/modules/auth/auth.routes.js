@@ -55,4 +55,23 @@ router.post('/refresh-token',
     catchAsync(authController.refreshToken)
 );
 
+// ROTAS PROTEGIDAS (essas sim exigem token)
+const { authenticate } = require('../../middlewares/auth.middleware');
+
+router.post('/logout',
+    authenticate,
+    catchAsync(authController.logout)
+);
+
+router.get('/me',
+    authenticate,
+    catchAsync(authController.getCurrentUser)
+);
+
+router.post('/change-password',
+    authenticate,
+    validate(authSchemas.changePassword),
+    catchAsync(authController.changePassword)
+);
+
 module.exports = router;
